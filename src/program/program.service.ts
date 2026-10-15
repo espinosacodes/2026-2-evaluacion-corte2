@@ -7,6 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, In, QueryFailedError, Repository } from 'typeorm';
 import { PaginationDto } from '../student/dto/pagination.dto';
 import { Student } from '../student/entities/student.entity';
+import { User } from '../user/entities/user.entity';
 import { AssignStudentsDto } from './dto/assign-students.dto';
 import { BulkCreateProgramDto } from './dto/bulk-create-program.dto';
 import { CreateProgramDto } from './dto/create-program.dto';
@@ -20,8 +21,14 @@ export class ProgramService {
     private readonly dataSource: DataSource,
   ) {}
 
-  async create(createProgramDto: CreateProgramDto): Promise<Program> {
-    const program = this.programRepository.create(createProgramDto);
+  async create(
+    createProgramDto: CreateProgramDto,
+    user: User,
+  ): Promise<Program> {
+    const program = this.programRepository.create({
+      ...createProgramDto,
+      createdBy: { id: user.id },
+    });
 
     try {
       return await this.programRepository.save(program);
@@ -112,6 +119,7 @@ export class ProgramService {
 
   async bulkCreate(
     bulkCreateProgramDto: BulkCreateProgramDto,
+    user: User,
   ): Promise<Program[]> {
     const queryRunner = this.dataSource.createQueryRunner();
 
@@ -120,7 +128,10 @@ export class ProgramService {
       await queryRunner.startTransaction();
 
       const programs = bulkCreateProgramDto.programs.map((programDto) =>
-        queryRunner.manager.create(Program, programDto),
+        queryRunner.manager.create(Program, {
+          ...programDto,
+          createdBy: { id: user.id },
+        }),
       );
       const createdPrograms = await queryRunner.manager.save(programs);
 

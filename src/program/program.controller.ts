@@ -19,6 +19,10 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { PaginationDto } from '../student/dto/pagination.dto';
+import { Auth } from '../user/decorators/auth.decorator';
+import { GetUser } from '../user/decorators/get-user.decorator';
+import { User } from '../user/entities/user.entity';
+import { ValidRoles } from '../user/enums/valid-roles.enum';
 import { AssignStudentsDto } from './dto/assign-students.dto';
 import { BulkCreateProgramDto } from './dto/bulk-create-program.dto';
 import { CreateProgramDto } from './dto/create-program.dto';
@@ -31,23 +35,34 @@ export class ProgramController {
   constructor(private readonly programService: ProgramService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Create a program' })
+  @Auth(ValidRoles.admin)
+  @ApiOperation({
+    summary: 'Create a program',
+    description: 'Requires the admin role',
+  })
   @ApiCreatedResponse({ description: 'Program was created', type: Program })
   @ApiBadRequestResponse({ description: 'Invalid request body' })
   @ApiConflictResponse({ description: 'Program name or code already exists' })
-  create(@Body() createProgramDto: CreateProgramDto) {
-    return this.programService.create(createProgramDto);
+  create(@Body() createProgramDto: CreateProgramDto, @GetUser() user: User) {
+    return this.programService.create(createProgramDto, user);
   }
 
   @Post('bulk')
-  @ApiOperation({ summary: 'Create all programs in a batch or none' })
+  @Auth(ValidRoles.admin)
+  @ApiOperation({
+    summary: 'Create all programs in a batch or none',
+    description: 'Requires the admin role',
+  })
   @ApiCreatedResponse({ description: 'Programs were created', type: [Program] })
   @ApiBadRequestResponse({
     description: 'Invalid programs array or program data',
   })
   @ApiConflictResponse({ description: 'Program name or code already exists' })
-  bulkCreate(@Body() bulkCreateProgramDto: BulkCreateProgramDto) {
-    return this.programService.bulkCreate(bulkCreateProgramDto);
+  bulkCreate(
+    @Body() bulkCreateProgramDto: BulkCreateProgramDto,
+    @GetUser() user: User,
+  ) {
+    return this.programService.bulkCreate(bulkCreateProgramDto, user);
   }
 
   @Get()
@@ -69,7 +84,11 @@ export class ProgramController {
   }
 
   @Patch(':id/students')
-  @ApiOperation({ summary: 'Add students while keeping current assignments' })
+  @Auth(ValidRoles.admin)
+  @ApiOperation({
+    summary: 'Add students while keeping current assignments',
+    description: 'Requires the admin role',
+  })
   @ApiParam({ name: 'id', format: 'uuid' })
   @ApiOkResponse({ description: 'Program with its students', type: Program })
   @ApiBadRequestResponse({ description: 'Invalid UUID or studentIds' })
@@ -80,6 +99,4 @@ export class ProgramController {
   ) {
     return this.programService.assignStudents(id, assignStudentsDto);
   }
-
-  // TODO Reto 4: proteger los POST y el PATCH para que solo un admin pueda usarlos
 }

@@ -1,6 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { Student } from '../../student/entities/student.entity';
+import { User } from '../../user/entities/user.entity';
 
 @Entity('program')
 export class Program {
@@ -24,5 +31,14 @@ export class Program {
   @OneToMany(() => Student, (student) => student.program)
   students?: Student[];
 
-  // TODO Reto 4: relación N:1 con User -> propiedad `createdBy?: User` (el admin que lo creó)
+  @ApiProperty({
+    description: 'Administrator who created the program',
+    type: 'object',
+    properties: { id: { type: 'string', format: 'uuid' } },
+    readOnly: true,
+    selfRequired: false,
+    nullable: true,
+  })
+  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
+  createdBy?: User;
 }
