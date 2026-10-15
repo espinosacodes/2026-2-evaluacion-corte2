@@ -8,6 +8,7 @@ import { DataSource, In, QueryFailedError, Repository } from 'typeorm';
 import { PaginationDto } from '../student/dto/pagination.dto';
 import { Student } from '../student/entities/student.entity';
 import { AssignStudentsDto } from './dto/assign-students.dto';
+import { BulkCreateProgramDto } from './dto/bulk-create-program.dto';
 import { CreateProgramDto } from './dto/create-program.dto';
 import { Program } from './entities/program.entity';
 
@@ -25,16 +26,7 @@ export class ProgramService {
     try {
       return await this.programRepository.save(program);
     } catch (error: unknown) {
-      if (
-        error instanceof QueryFailedError &&
-        (error.driverError as { code?: string }).code === '23505'
-      ) {
-        throw new ConflictException(
-          'A program with this name or code already exists',
-        );
-      }
-
-      throw error;
+      this.handleDatabaseError(error);
     }
   }
 
@@ -118,6 +110,42 @@ export class ProgramService {
     }
   }
 
-  // TODO Reto 3: bulkCreate(bulkCreateProgramDto, user) -> crea todos los programas o ninguno
-  //   (transacción). Cualquier nombre/código repetido -> 409 y rollback.
+  async bulkCreate(
+    bulkCreateProgramDto: BulkCreateProgramDto,
+  ): Promise<Program[]> {
+    const queryRunner = this.dataSource.createQueryRunner();
+
+    try {
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
+
+      const programs = bulkCreateProgramDto.programs.map((programDto) =>
+        queryRunner.manager.create(Program, programDto),
+      );
+      const createdPrograms = await queryRunner.manager.save(programs);
+
+      await queryRunner.commitTransaction();
+      return createdPrograms;
+    } catch (error: unknown) {
+      if (queryRunner.isTransactionActive) {
+        await queryRunner.rollbackTransaction();
+      }
+      this.handleDatabaseError(error);
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  private handleDatabaseError(error: unknown): never {
+    if (
+      error instanceof QueryFailedError &&
+      (error.driverError as { code?: string }).code === '23505'
+    ) {
+      throw new ConflictException(
+        'A program with this name or code already exists',
+      );
+    }
+
+    throw error;
+  }
 }

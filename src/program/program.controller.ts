@@ -20,6 +20,7 @@ import {
 } from '@nestjs/swagger';
 import { PaginationDto } from '../student/dto/pagination.dto';
 import { AssignStudentsDto } from './dto/assign-students.dto';
+import { BulkCreateProgramDto } from './dto/bulk-create-program.dto';
 import { CreateProgramDto } from './dto/create-program.dto';
 import { Program } from './entities/program.entity';
 import { ProgramService } from './program.service';
@@ -36,6 +37,17 @@ export class ProgramController {
   @ApiConflictResponse({ description: 'Program name or code already exists' })
   create(@Body() createProgramDto: CreateProgramDto) {
     return this.programService.create(createProgramDto);
+  }
+
+  @Post('bulk')
+  @ApiOperation({ summary: 'Create all programs in a batch or none' })
+  @ApiCreatedResponse({ description: 'Programs were created', type: [Program] })
+  @ApiBadRequestResponse({
+    description: 'Invalid programs array or program data',
+  })
+  @ApiConflictResponse({ description: 'Program name or code already exists' })
+  bulkCreate(@Body() bulkCreateProgramDto: BulkCreateProgramDto) {
+    return this.programService.bulkCreate(bulkCreateProgramDto);
   }
 
   @Get()
@@ -69,6 +81,5 @@ export class ProgramController {
     return this.programService.assignStudents(id, assignStudentsDto);
   }
 
-  // TODO Reto 3: POST   /api/program/bulk          -> crear programas en lote (todo o nada)
   // TODO Reto 4: proteger los POST y el PATCH para que solo un admin pueda usarlos
 }
