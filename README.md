@@ -172,3 +172,4 @@ Haz commit y push a tu repositorio de GitHub Classroom antes de que termine el t
 
 Además del ejercicio de código, responde el cuestionario de selección múltiple en [QUIZ.md](QUIZ.md).
 # 2026-2-evaluacion-corte2
+# 2026-2-evaluacion-corte2
