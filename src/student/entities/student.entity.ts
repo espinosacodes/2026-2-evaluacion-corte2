@@ -1,6 +1,7 @@
-import { BeforeInsert, BeforeUpdate, Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { BeforeInsert, BeforeUpdate, Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { Grades } from "./grades.entity";
 import { ApiProperty } from "@nestjs/swagger";
+import { Program } from "../../program/entities/program.entity";
 
 @Entity()
 export class Student {
@@ -88,8 +89,13 @@ export class Student {
     )
     grades?: Grades[]
 
-    // TODO Reto 2: relación N:1 con Program -> propiedad `program?: Program`
-    //   (opcional: un estudiante puede no tener programa; si se borra el programa, queda en NULL)
+    @ApiProperty({ type: () => Program, required: false, nullable: true })
+    @ManyToOne(
+        () => Program,
+        (program) => program.students,
+        { nullable: true, onDelete: "SET NULL" }
+    )
+    program?: Program;
 
     @BeforeInsert()
     checkNicknameInsert(){

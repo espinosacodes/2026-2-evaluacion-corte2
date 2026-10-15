@@ -1,13 +1,25 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiConflictResponse,
   ApiCreatedResponse,
+  ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
 import { PaginationDto } from '../student/dto/pagination.dto';
+import { AssignStudentsDto } from './dto/assign-students.dto';
 import { CreateProgramDto } from './dto/create-program.dto';
 import { Program } from './entities/program.entity';
 import { ProgramService } from './program.service';
@@ -34,8 +46,29 @@ export class ProgramController {
     return this.programService.findAll(paginationDto);
   }
 
-  // TODO Reto 2: GET    /api/program/:id           -> programa con sus estudiantes
-  // TODO Reto 2: PATCH  /api/program/:id/students  -> agregar estudiantes (acumulativo)
+  @Get(':id')
+  @ApiOperation({ summary: 'Find a program with its students' })
+  @ApiParam({ name: 'id', format: 'uuid' })
+  @ApiOkResponse({ description: 'Program with its students', type: Program })
+  @ApiBadRequestResponse({ description: 'Invalid program UUID' })
+  @ApiNotFoundResponse({ description: 'Program not found' })
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
+    return this.programService.findOne(id);
+  }
+
+  @Patch(':id/students')
+  @ApiOperation({ summary: 'Add students while keeping current assignments' })
+  @ApiParam({ name: 'id', format: 'uuid' })
+  @ApiOkResponse({ description: 'Program with its students', type: Program })
+  @ApiBadRequestResponse({ description: 'Invalid UUID or studentIds' })
+  @ApiNotFoundResponse({ description: 'Program or student not found' })
+  assignStudents(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() assignStudentsDto: AssignStudentsDto,
+  ) {
+    return this.programService.assignStudents(id, assignStudentsDto);
+  }
+
   // TODO Reto 3: POST   /api/program/bulk          -> crear programas en lote (todo o nada)
   // TODO Reto 4: proteger los POST y el PATCH para que solo un admin pueda usarlos
 }
